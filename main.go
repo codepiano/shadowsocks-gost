@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"os"
@@ -8,29 +9,23 @@ import (
 )
 
 func main() {
-	var localHost string
-	var localPort string
-	var remoteHost string
-	var remotePort string
-	var pluginOpts string
-
-	localHost = os.Getenv("SS_LOCAL_HOST")
-	localPort = os.Getenv("SS_LOCAL_PORT")
-	remoteHost = os.Getenv("SS_REMOTE_HOST")
-	remotePort = os.Getenv("SS_REMOTE_PORT")
-	pluginOpts = os.Getenv("SS_PLUGIN_OPTIONS")
-	writeTo(fmt.Sprintf("%s|%s|%s|%s|%s", localHost, localPort, remoteHost, remotePort, pluginOpts))
 	for _, arg := range os.Args {
 		writeTo(arg)
 	}
-	gostCmd := fmt.Sprintf("gost -L ss://%s:%s@:%d -F 'https://%s:%s@%s:%d'")
 }
 
-func startGostClient() {
+var configTpl = "gost -L 'ss://{{.Method}}:{{.SSPassword}}@{{.SSLocalAddress}}:{{.SSPort}}' -F 'https://{{.GostAddress}}:{{.GostPort}}?auth={{.GostAuth}}'"
 
-	tmpl, err := template.New("gost").Parse("gost -L 'ss://{{.Method}}:{{.SSPassword}}@:{{.SSPort}}' -F ''")
+func startGostClient(config *Config) {
+	cmdTpl, err := template.New("gost").Parse(configTpl)
 	if err != nil {
 		log.Fatalf("parse gost cmd err: %v", err)
+	}
+	// 渲染执行命令
+	var b *bytes.Buffer
+	err = cmdTpl.Execute(b, config)
+	if err != nil {
+		log.Fatalf("render config error: %v", err)
 	}
 }
 
