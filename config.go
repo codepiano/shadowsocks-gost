@@ -1,11 +1,11 @@
 package main
 
 import (
-	"encoding/base64"
 	"encoding/json"
-	"log"
+	"fmt"
 	"os"
 	"strconv"
+	"strings"
 )
 
 type Config struct {
@@ -18,6 +18,7 @@ type Config struct {
 	*/
 	Method string `json:"method"`
 
+	GostPath string `json:"gost_path"`
 	// Gost 服务器配置，gost 客户端通过下面的配置连接 gost 服务器
 	GostAddress string `json:"gost_Address"`
 	GostPort    int    `json:"gost_port"`
@@ -25,11 +26,11 @@ type Config struct {
 	GostAuth string `json:"gost_auth"`
 }
 
-func InitConfig() {
+func InitConfig() *Config {
 	c := &Config{}
 	c.getEnvConfigs()
-	if c.SSPort == 0 || c.SSPassword == "" || c.GostAddress == "" || c.GostPort == 0 || c.GostAuth == "" {
-		log.Fatalf("config invalid")
+	if c.SSPort == 0 || c.GostAddress == "" || c.GostPath == "" || c.GostPort == 0 || c.GostAuth == "" {
+		writeTo("config invalid")
 	}
 	if c.Method == "" {
 		c.Method = "chacha20-ietf-poly1305"
@@ -38,8 +39,10 @@ func InitConfig() {
 		c.SSLocalAddress = "127.0.0.1"
 	}
 	if c.SSPassword == "" {
-
+		c.SSPassword = "123456"
 	}
+	writeTo(c.toString())
+	return c
 }
 
 func (c *Config) getEnvConfigs() {
@@ -53,7 +56,7 @@ func (c *Config) getEnvConfigs() {
 	port = os.Getenv("SS_LOCAL_PORT")
 	c.SSPort, err = strconv.Atoi(port)
 	if err != nil {
-		log.Fatalf("ss local port invalid, port: %s, err: %v", port, err)
+		writeTo("ss local port invalid, port: %s, err: %v", port, err)
 	}
 
 	c.GostAddress = os.Getenv("SS_REMOTE_HOST")
@@ -61,21 +64,46 @@ func (c *Config) getEnvConfigs() {
 	remotePort = os.Getenv("SS_REMOTE_PORT")
 	c.GostPort, err = strconv.Atoi(remotePort)
 	if err != nil {
-		log.Fatalf("ss local port invalid, port: %s, err: %v", remotePort, err)
+		writeTo("ss local port invalid, port: %s, err: %v", remotePort, err)
 	}
 
 	pluginOpts = os.Getenv("SS_PLUGIN_OPTIONS")
 	if pluginOpts == "" {
-		log.Fatal("no gost auth config")
+		writeTo("no gost auth config")
 	}
-	c.GostAuth = base64.StdEncoding.EncodeToString([]byte(pluginOpts))
-	writeTo(c.toString())
+	opts := strings.Split(pluginOpts, "|")
+	var authInfo string
+	switch len(opts) {
+	case 1:
+		{
+			contentBytes, err := os.ReadFile(opts[0])
+			if err != nil {
+				writeTo("read config file %s error: %v", opts[0], err)
+			}
+			err = json.Unmarshal(contentBytes, c)
+			if err != nil {
+				writeTo("unmarshal config file %s error: %v", opts[0], err)
+			}
+		}
+	case 3:
+		{
+			c.GostPath = opts[0]
+			authInfo = fmt.Sprintf("%s:%s", opts[1], opts[2])
+		}
+	case 4:
+		{
+			c.GostPath = opts[0]
+			authInfo = fmt.Sprintf("%s:%s", opts[1], opts[2])
+			c.SSPassword = opts[3]
+		}
+	}
+	c.GostAuth = authInfo
 }
 
 func (c *Config) toString() string {
 	data, err := json.Marshal(c)
 	if err != nil {
-		log.Fatalf("marshal config err: %v", err)
+		writeTo("marshal config err: %v", err)
 	}
 	return string(data)
 }

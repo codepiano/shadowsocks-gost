@@ -5,31 +5,65 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
+	"strings"
 	"text/template"
 )
 
 func main() {
-	for _, arg := range os.Args {
-		writeTo(arg)
-	}
+	config := InitConfig()
+	startGostClient(config)
 }
 
-var configTpl = "gost -L 'ss://{{.Method}}:{{.SSPassword}}@{{.SSLocalAddress}}:{{.SSPort}}' -F 'https://{{.GostAddress}}:{{.GostPort}}?auth={{.GostAuth}}'"
+var gostLTpl = "ss://{{.Method}}:{{.SSPassword}}@{{.SSLocalAddress}}:{{.SSPort}}"
+var gostFTpl = "https://{{.GostAuth}}@{{.GostAddress}}:{{.GostPort}}"
 
 func startGostClient(config *Config) {
-	cmdTpl, err := template.New("gost").Parse(configTpl)
+	// 初始化参数模板
+	gostL, err := template.New("gostL").Parse(gostLTpl)
 	if err != nil {
-		log.Fatalf("parse gost cmd err: %v", err)
+		writeTo("parse gostL tpl err: %v", err)
+	}
+	gostF, err := template.New("gostF").Parse(gostFTpl)
+	if err != nil {
+		writeTo("parse gostF tpl err: %v", err)
 	}
 	// 渲染执行命令
-	var b *bytes.Buffer
-	err = cmdTpl.Execute(b, config)
+	var LArg bytes.Buffer
+	err = gostL.Execute(&LArg, config)
 	if err != nil {
-		log.Fatalf("render config error: %v", err)
+		writeTo("render LArg error: %v", err)
+	}
+	var FArg bytes.Buffer
+	err = gostF.Execute(&FArg, config)
+	if err != nil {
+		writeTo("render FArg error: %v", err)
+	}
+	// 执行
+	cmd := exec.Command(config.GostPath, "-L", LArg.String(), "-F", FArg.String())
+	writeTo(cmd.String())
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		writeTo("get stdout error: %v", err)
+	}
+	cmd.Stderr = cmd.Stdout
+	writeTo(strings.Join(os.Environ(), "|"))
+	err = cmd.Start()
+	if err != nil {
+		writeTo("start gost failed, err: %v", err)
+	}
+	for {
+		tmp := make([]byte, 1024)
+		_, err := stdout.Read(tmp)
+		writeTo(string(tmp))
+		if err != nil {
+			break
+		}
 	}
 }
 
-func writeTo(test string) {
+func writeTo(format string, v ...any) {
+	test := fmt.Sprintf(format, v...)
 	f, err := os.OpenFile("/tmp/log.txt",
 		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
