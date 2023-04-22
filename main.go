@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"fmt"
+	"io"
 	"log"
 	"os/exec"
 	"text/template"
@@ -16,7 +18,13 @@ var gostLTpl = "ss://{{.Method}}:{{.SSPassword}}@{{.SSLocalAddress}}:{{.SSPort}}
 var gostFTpl = "https://{{.GostAuth}}@{{.GostAddress}}:{{.GostPort}}"
 
 func startGostClient(config *Config) {
+	if config == nil {
+		log.Fatalf("config is empty")
+	}
 	// 初始化参数模板
+	if config.Debug {
+		debug(fmt.Sprintf("config: %s", config.toString()))
+	}
 	gostL, err := template.New("gostL").Parse(gostLTpl)
 	if err != nil {
 		log.Fatalf("parse gostL tpl err: %v", err)
@@ -37,21 +45,16 @@ func startGostClient(config *Config) {
 		log.Fatalf("render FArg error: %v", err)
 	}
 	// 执行
+	if config.Debug {
+		debug(fmt.Sprintf("%s -L %s -F %s", config.GostPath, LArg.String(), FArg.String()))
+	}
 	cmd := exec.Command(config.GostPath, "-L", LArg.String(), "-F", FArg.String())
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		log.Fatalf("get stdout error: %v", err)
+	if !config.Debug {
+		cmd.Stdout = io.Discard
+		cmd.Stderr = io.Discard
 	}
-	cmd.Stderr = cmd.Stdout
-	err = cmd.Start()
-	if err != nil {
-		log.Fatalf("start gost failed, err: %v", err)
-	}
-	for {
-		tmp := make([]byte, 1024)
-		_, err := stdout.Read(tmp)
-		if err != nil {
-			break
-		}
-	}
+}
+
+func debug(text string) {
+	fmt.Println(fmt.Sprintf("shadowsocks-gost debug: %s", text))
 }

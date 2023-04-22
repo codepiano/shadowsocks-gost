@@ -10,6 +10,7 @@ import (
 )
 
 type Config struct {
+	Debug          bool   `json:"debug"`
 	SSLocalAddress string `json:"ss_local_address"`
 	SSPort         int    `json:"ss_port"`
 	SSPassword     string `json:"ss_password"`
@@ -101,7 +102,7 @@ func (c *Config) getEnvConfigs() {
 }
 
 func (c *Config) toString() string {
-	data, err := json.Marshal(c)
+	data, err := json.MarshalIndent(c, "", "    ")
 	if err != nil {
 		log.Fatalf("marshal config err: %v", err)
 	}
