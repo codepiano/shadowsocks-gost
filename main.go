@@ -10,6 +10,11 @@ import (
 )
 
 func main() {
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Println(fmt.Sprintf("shadowsocks-gost panic: %v", err))
+		}
+	}()
 	config := InitConfig()
 	startGostClient(config)
 }
@@ -52,6 +57,10 @@ func startGostClient(config *Config) {
 	if !config.Debug {
 		cmd.Stdout = io.Discard
 		cmd.Stderr = io.Discard
+	}
+	err = cmd.Run()
+	if err != nil {
+		log.Fatalf("start gost client error: %v", err)
 	}
 }
 

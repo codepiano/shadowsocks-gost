@@ -43,6 +43,7 @@ func InitConfig() *Config {
 	if c.SSPassword == "" {
 		c.SSPassword = "123456"
 	}
+	c.Debug = true
 	return c
 }
 
