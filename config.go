@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -30,7 +31,7 @@ func InitConfig() *Config {
 	c := &Config{}
 	c.getEnvConfigs()
 	if c.SSPort == 0 || c.GostAddress == "" || c.GostPath == "" || c.GostPort == 0 || c.GostAuth == "" {
-		writeTo("config invalid")
+		log.Fatalf("config invalid")
 	}
 	if c.Method == "" {
 		c.Method = "chacha20-ietf-poly1305"
@@ -41,7 +42,6 @@ func InitConfig() *Config {
 	if c.SSPassword == "" {
 		c.SSPassword = "123456"
 	}
-	writeTo(c.toString())
 	return c
 }
 
@@ -56,7 +56,7 @@ func (c *Config) getEnvConfigs() {
 	port = os.Getenv("SS_LOCAL_PORT")
 	c.SSPort, err = strconv.Atoi(port)
 	if err != nil {
-		writeTo("ss local port invalid, port: %s, err: %v", port, err)
+		log.Fatalf("ss local port invalid, port: %s, err: %v", port, err)
 	}
 
 	c.GostAddress = os.Getenv("SS_REMOTE_HOST")
@@ -64,12 +64,12 @@ func (c *Config) getEnvConfigs() {
 	remotePort = os.Getenv("SS_REMOTE_PORT")
 	c.GostPort, err = strconv.Atoi(remotePort)
 	if err != nil {
-		writeTo("ss local port invalid, port: %s, err: %v", remotePort, err)
+		log.Fatalf("ss local port invalid, port: %s, err: %v", remotePort, err)
 	}
 
 	pluginOpts = os.Getenv("SS_PLUGIN_OPTIONS")
 	if pluginOpts == "" {
-		writeTo("no gost auth config")
+		log.Fatalf("no gost auth config")
 	}
 	opts := strings.Split(pluginOpts, "|")
 	var authInfo string
@@ -78,11 +78,11 @@ func (c *Config) getEnvConfigs() {
 		{
 			contentBytes, err := os.ReadFile(opts[0])
 			if err != nil {
-				writeTo("read config file %s error: %v", opts[0], err)
+				log.Fatalf("read config file %s error: %v", opts[0], err)
 			}
 			err = json.Unmarshal(contentBytes, c)
 			if err != nil {
-				writeTo("unmarshal config file %s error: %v", opts[0], err)
+				log.Fatalf("unmarshal config file %s error: %v", opts[0], err)
 			}
 		}
 	case 3:
@@ -103,7 +103,7 @@ func (c *Config) getEnvConfigs() {
 func (c *Config) toString() string {
 	data, err := json.Marshal(c)
 	if err != nil {
-		writeTo("marshal config err: %v", err)
+		log.Fatalf("marshal config err: %v", err)
 	}
 	return string(data)
 }
