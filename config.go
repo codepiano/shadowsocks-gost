@@ -48,27 +48,9 @@ func InitConfig() *Config {
 }
 
 func (c *Config) getEnvConfigs() {
-	var port string
-	var remotePort string
-	var pluginOpts string
 	var err error
 
-	c.SSLocalAddress = os.Getenv("SS_LOCAL_HOST")
-
-	port = os.Getenv("SS_LOCAL_PORT")
-	c.SSPort, err = strconv.Atoi(port)
-	if err != nil {
-		log.Fatalf("ss local port invalid, port: %s, err: %v", port, err)
-	}
-
-	c.GostAddress = os.Getenv("SS_REMOTE_HOST")
-
-	remotePort = os.Getenv("SS_REMOTE_PORT")
-	c.GostPort, err = strconv.Atoi(remotePort)
-	if err != nil {
-		log.Fatalf("ss local port invalid, port: %s, err: %v", remotePort, err)
-	}
-
+	var pluginOpts string
 	pluginOpts = os.Getenv("SS_PLUGIN_OPTIONS")
 	if pluginOpts == "" {
 		log.Fatalf("no gost auth config")
@@ -104,6 +86,33 @@ func (c *Config) getEnvConfigs() {
 	} else {
 		c.GostAuth = base64.StdEncoding.EncodeToString([]byte(c.GostAuth))
 	}
+
+	ssLocalHost := os.Getenv("SS_LOCAL_HOST")
+	if ssLocalHost != "" && c.SSLocalAddress == "" {
+		c.SSLocalAddress = ssLocalHost
+	}
+
+	port := os.Getenv("SS_LOCAL_PORT")
+	if port != "" && c.SSPort == 0 {
+		c.SSPort, err = strconv.Atoi(port)
+		if err != nil {
+			log.Fatalf("ss local port invalid, port: %s, err: %v", port, err)
+		}
+	}
+
+	ssRemoteHost := os.Getenv("SS_REMOTE_HOST")
+	if ssRemoteHost != "" && c.GostAddress == "" {
+		c.GostAddress = ssRemoteHost
+	}
+
+	remotePort := os.Getenv("SS_REMOTE_PORT")
+	if remotePort != "" && c.GostPort == 0 {
+		c.GostPort, err = strconv.Atoi(remotePort)
+		if err != nil {
+			log.Fatalf("ss local port invalid, port: %s, err: %v", remotePort, err)
+		}
+	}
+
 }
 
 func (c *Config) toString() string {
