@@ -20,7 +20,7 @@ func main() {
 }
 
 var gostLTpl = "ss://{{.Method}}:{{.SSPassword}}@{{.SSLocalAddress}}:{{.SSPort}}"
-var gostFTpl = "https://{{.GostAuth}}@{{.GostAddress}}:{{.GostPort}}"
+var gostFTpl = "https://{{.GostAddress}}:{{.GostPort}}?auth={{.GostAuth}}"
 
 func startGostClient(config *Config) {
 	if config == nil {

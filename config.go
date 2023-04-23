@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -22,7 +23,7 @@ type Config struct {
 
 	GostPath string `json:"gost_path"`
 	// Gost 服务器配置，gost 客户端通过下面的配置连接 gost 服务器
-	GostAddress string `json:"gost_Address"`
+	GostAddress string `json:"gost_address"`
 	GostPort    int    `json:"gost_port"`
 	// 认证串，格式为 user:password 的 base64 形式
 	GostAuth string `json:"gost_auth"`
@@ -43,7 +44,6 @@ func InitConfig() *Config {
 	if c.SSPassword == "" {
 		c.SSPassword = "123456"
 	}
-	c.Debug = true
 	return c
 }
 
@@ -99,7 +99,11 @@ func (c *Config) getEnvConfigs() {
 			c.SSPassword = opts[3]
 		}
 	}
-	c.GostAuth = authInfo
+	if authInfo != "" {
+		c.GostAuth = base64.StdEncoding.EncodeToString([]byte(authInfo))
+	} else {
+		c.GostAuth = base64.StdEncoding.EncodeToString([]byte(c.GostAuth))
+	}
 }
 
 func (c *Config) toString() string {

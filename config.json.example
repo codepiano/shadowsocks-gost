@@ -1,0 +1,10 @@
+{
+    "gost_path": "",
+    "gost_Address": "",
+    "gost_port": 443,
+    "gost_auth": "aG93IGRhcmUgeW91",
+
+    "debug": true,
+    "ss_password": "123456",
+    "method": "chacha20-ietf-poly1305"
+}
