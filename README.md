@@ -2,7 +2,7 @@
 
 以 ShadowsocksX-NG 为例：
 
-下载或者编译对应操作系统的二进制文件，将其放到 ShadowsocksX-NG 的插件目录中
+下载或者编译对应操作系统的二进制文件，重命名为 shadowsocks-gost，将其放到 ShadowsocksX-NG 的插件目录中
 
 编写配置文件，在 ShadowsocksX-NG 中新建服务器，按照下面的配置文件说明进行配置
 
@@ -35,7 +35,7 @@
     "gost_path": "",
     "gost_Address": "",
     "gost_port": 443,
-    "gost_auth": "aG93IGRhcmUgeW91"
+    "gost_auth": "user:password"
 }
 ```
 
